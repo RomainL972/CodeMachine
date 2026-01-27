@@ -27,7 +27,7 @@ struct ACC {
     // clang-format on
 };
 
-struct ACC_MA {
+struct ACC_MA_PWN {
     // clang-format off
     static constexpr std::pair<const std::string, const uint8_t> opcodes[] = {
         {"add", 0x00},
@@ -49,6 +49,13 @@ struct ACC_MA {
         {"shl", 0x10},
         {"shr", 0x11},
         {"stop", 0x13},
+        {"lea", 0x14},
+        {"in", 0x15},
+        {"out", 0x16},
+        {"and", 0x17},
+        {"or", 0x18},
+        {"xor", 0x19},
+        {"not", 0x1A},
     };
     // clang-format on
 };

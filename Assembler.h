@@ -61,11 +61,16 @@ class Assembler {
             }
 
             const auto items = split(line);
-            std::string label = items[0];
-            label.pop_back();  // remove ":"
+            int value;
+            if (items.size() == 2) {
+                std::string label = items[0];
+                label.pop_back();  // remove ":"
 
-            int value = std::stoi(items[1]);
-            labels[label] = codeSize;
+                value = std::stoi(items[1]);
+                labels[label] = codeSize;
+            } else {
+                value = std::stoi(items[0]);
+            }
             data.push_back(value);
 
             ++codeSize;

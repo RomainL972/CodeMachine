@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <functional>
 #include <unordered_map>
+#include <iostream>
+#include <cstring>
 
 #include "Assembler.h"
 #include "ISA.h"
@@ -22,6 +24,16 @@ class CPU {
         }
     }
 
+    void dumpProgram(const std::string& filename) {
+        std::filesystem::path file{filename};
+        std::ofstream outfile(file);
+        char content[2];
+        for (uint8_t i = 0; i < memorySize; ++i) {
+            memcpy(content, &MEM[i], 2);
+            outfile.write(content, 2);
+        }
+    }
+
     void runProgram() {
         isCpuRunning = true;
         while (isCpuRunning) {
@@ -29,7 +41,6 @@ class CPU {
             decode();
             execute();
         }
-        std::cout << ACC << '\n';
     }
 
     void fetch() { IR = MEM[PC++]; };
@@ -77,7 +88,7 @@ inline std::unordered_map<uint8_t, CPU<ACC>::Instruction>& CPU<ACC>::dispatch() 
 
 // clang-format off
 template <>
-inline std::unordered_map<uint8_t, CPU<ACC_MA>::Instruction>& CPU<ACC_MA>::dispatch() {
+inline std::unordered_map<uint8_t, CPU<ACC_MA_PWN>::Instruction>& CPU<ACC_MA_PWN>::dispatch() {
     static std::unordered_map<uint8_t, Instruction> table = {
         {0x00, [this](uint8_t ADR) { ACC += MEM[ADR]; }},           // add
         {0x01, [this](uint8_t ADR) { ACC -= MEM[ADR]; }},           // sub
@@ -98,6 +109,13 @@ inline std::unordered_map<uint8_t, CPU<ACC_MA>::Instruction>& CPU<ACC_MA>::dispa
         {0x10, [this](uint8_t) { ACC <<= 1; }},                    // shl
         {0x11, [this](uint8_t) { ACC >>= 1; }},                    // shr
         {0x13, [this](uint8_t) { isCpuRunning = false;}},          // stop
+        {0x14, [this](uint8_t ADR) { MA = ADR; }},                 // lea
+        {0x15, [this](uint8_t) { char letter; std::cin >> letter; ACC = letter; }},              // in
+        {0x16, [this](uint8_t) { std::cout << static_cast<char>(ACC); }},             // out
+        {0x17, [this](uint8_t ADR) { ACC &= MEM[ADR]; }},          // and
+        {0x18, [this](uint8_t ADR) { ACC |= MEM[ADR]; }},          // or
+        {0x19, [this](uint8_t ADR) { ACC ^= MEM[ADR]; }},          // xor
+        {0x1A, [this](uint8_t) { ACC = ~ACC; }},                   // not
     };
     return table;
 }
