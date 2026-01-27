@@ -27,11 +27,7 @@ class CPU {
     void dumpProgram(const std::string& filename) {
         std::filesystem::path file{filename};
         std::ofstream outfile(file);
-        char content[2];
-        for (uint8_t i = 0; i < memorySize; ++i) {
-            memcpy(content, &MEM[i], 2);
-            outfile.write(content, 2);
-        }
+        outfile.write(reinterpret_cast<const char*>(MEM.data()), MEM.size() * sizeof(uint16_t));
     }
 
     void runProgram() {
