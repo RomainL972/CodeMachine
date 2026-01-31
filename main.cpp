@@ -5,9 +5,14 @@
 #include "Cpu.h"
 #include "ISA.h"
 
-int main() {
+int main(int argc, char** argv) {
     CPU<ACC_MA_PWN> cpu;
-    cpu.loadProgram("code.s");
+
+    if (argc < 2) {
+        cpu.loadProgram("code.s");
+    } else {
+        cpu.loadProgram(argv[1]);
+    }
     cpu.dumpProgram("memory.bin");
     cpu.runProgram();
 }
