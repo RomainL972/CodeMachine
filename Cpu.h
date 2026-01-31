@@ -36,6 +36,11 @@ class CPU {
             fetch();
             decode();
             execute();
+
+            if (PC >= memorySize) {
+                isCpuRunning = false;
+                std::cout << "Program counter out of bounds. Halting execution." << std::endl;
+            }
         }
     }
 
@@ -57,6 +62,8 @@ class CPU {
     uint16_t ACC = 0;
     uint16_t MA = 0;
     std::array<uint16_t, memorySize> MEM{};
+
+    bool overflowFlag = false;
 
     uint8_t currOpcode = 0;
     uint8_t currData = 0;
@@ -86,7 +93,7 @@ inline std::unordered_map<uint8_t, CPU<ACC>::Instruction>& CPU<ACC>::dispatch() 
 template <>
 inline std::unordered_map<uint8_t, CPU<ACC_MA_PWN>::Instruction>& CPU<ACC_MA_PWN>::dispatch() {
     static std::unordered_map<uint8_t, Instruction> table = {
-        {0x00, [this](uint8_t ADR) { ACC += MEM[ADR]; }},           // add
+        {0x00, [this](uint8_t ADR) { uint16_t newACC = ACC + MEM[ADR]; overflowFlag = newACC < ACC; ACC = newACC; }},           // add
         {0x01, [this](uint8_t ADR) { ACC -= MEM[ADR]; }},           // sub
         {0x02, [this](uint8_t ADR) { ACC *= MEM[ADR]; }},           // mul
         {0x03, [this](uint8_t ADR) { MA += MEM[ADR]; }},            // adda
@@ -102,8 +109,8 @@ inline std::unordered_map<uint8_t, CPU<ACC_MA_PWN>::Instruction>& CPU<ACC_MA_PWN
         {0x0D, [this](uint8_t ADR) { PC = ADR; }},                 // br
         {0x0E, [this](uint8_t ADR) { if (ACC == 0) PC = ADR; }},   // brz
         {0x0F, [this](uint8_t ADR) { if (ACC != 0) PC = ADR; }},   // brnz
-        {0x10, [this](uint8_t) { ACC <<= 1; }},                    // shl
-        {0x11, [this](uint8_t) { ACC >>= 1; }},                    // shr
+        {0x10, [this](uint8_t ADR) { ACC <<= MEM[ADR]; }},                    // shl
+        {0x11, [this](uint8_t ADR) { ACC >>= MEM[ADR]; }},                    // shr
         {0x13, [this](uint8_t) { isCpuRunning = false;}},          // stop
         {0x14, [this](uint8_t ADR) { MA = ADR; }},                 // lea
         {0x15, [this](uint8_t) { char letter; std::cin >> letter; ACC = letter; }},              // in
@@ -112,6 +119,12 @@ inline std::unordered_map<uint8_t, CPU<ACC_MA_PWN>::Instruction>& CPU<ACC_MA_PWN
         {0x18, [this](uint8_t ADR) { ACC |= MEM[ADR]; }},          // or
         {0x19, [this](uint8_t ADR) { ACC ^= MEM[ADR]; }},          // xor
         {0x1A, [this](uint8_t) { ACC = ~ACC; }},                   // not
+        {0x1B, [this](uint8_t ADR) { if (static_cast<int16_t>(ACC) > 0) PC = ADR; }},    // brp
+        {0x1C, [this](uint8_t ADR) { if (static_cast<int16_t>(ACC) < 0) PC = ADR; }},    // brn
+        {0x1D, [this](uint8_t) { std::cin >> ACC; }},                   // ini
+        {0x1E, [this](uint8_t) { std::cout << ACC; }},                  // outi
+        {0x1F, [this](uint8_t ADR) { if (overflowFlag) PC = ADR; }},               // bro
+        {0x20, [this](uint8_t ADR) { if (!overflowFlag) PC = ADR; }},              // brno
     };
     return table;
 }

@@ -56,6 +56,12 @@ struct ACC_MA_PWN {
         {"or", 0x18},
         {"xor", 0x19},
         {"not", 0x1A},
+        {"brp", 0x1B},
+        {"brn", 0x1C},
+        {"ini", 0x1D},
+        {"outi", 0x1E},
+        {"bro", 0x1F},
+        {"brno", 0x20},
     };
     // clang-format on
 };
