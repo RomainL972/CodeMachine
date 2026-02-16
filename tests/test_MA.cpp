@@ -12,70 +12,75 @@
 
 std::string codePath;
 
-TEST(CountNumbers, BaseCase) {
-    CPU<ACC_MA> cpu;
-    cpu.loadProgram(codePath);
-    cpu.runProgram();
-
-    EXPECT_EQ(cpu.ACC, 3);
-}
-
-TEST(CountNumbers, DifferentTarget) {
+TEST(ProduitScalaire, Exemple1) {
     auto program = Assembler<ACC_MA>::parseProgramLayout(codePath);
 
     CPU<ACC_MA> cpu;
     cpu.loadProgram(codePath);
 
-    setVariable(cpu, program, "target", 3);
+    setArray(cpu, program, "v", {1, 2, 3});
+    setArray(cpu, program, "w", {4, 5, 6});
+    setVariable(cpu, program, "n", 3);
 
     cpu.runProgram();
-    EXPECT_EQ(cpu.ACC, 1);
+    EXPECT_EQ(cpu.ACC, 32);
+    EXPECT_LE(cpu.nCycles, 150) << "Your program is not efficient enough (more than 150 cycles for 3 elements)";
 }
 
-TEST(CountNumbers, DifferentArray) {
+TEST(ProduitScalaire, Single) {
     auto program = Assembler<ACC_MA>::parseProgramLayout(codePath);
 
+    program.labels["w"] = program.labels["v"] + 1;  // w starts right after v
+
     CPU<ACC_MA> cpu;
-    cpu.loadProgram(codePath);
-    clearMemoryPastLabel(cpu, program, "nums");
-    std::vector<uint16_t> values = {1, 2, 3, 2, 5, 2, 7, 8, 9, 2};
-    setVariable(cpu, program, "n", values.size());
-    setArray(cpu, program, "nums", values);
-    setVariable(cpu, program, "target", 2);
+    cpu.loadProgramLayout(program);
+
+    setArray(cpu, program, "v", {5});
+    setArray(cpu, program, "w", {4});
+    setVariable(cpu, program, "n", 1);
 
     cpu.runProgram();
-    EXPECT_EQ(cpu.ACC, 4);
+    EXPECT_EQ(cpu.ACC, 20);
 }
 
-TEST(CountNumbers, RandomArray) {
+TEST(ProduitScalaire, RandomArray) {
     auto program = Assembler<ACC_MA>::parseProgramLayout(codePath);
 
-    CPU<ACC_MA> cpu;
-    cpu.loadProgram(codePath);
-
-    clearMemoryPastLabel(cpu, program, "nums");
-
-    constexpr size_t SIZE = 50;
+    constexpr size_t SIZE = 10;
     constexpr uint16_t MAX_VAL = 100;
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<uint16_t> dist(0, MAX_VAL);
 
-    std::vector<uint16_t> values(SIZE);
-    for (auto& v : values) v = dist(gen);
+    program.labels["w"] = program.labels["v"] + SIZE;  // w starts right after v
 
-    std::uniform_int_distribution<size_t> idx_dist(0, SIZE - 1);
-    uint16_t target = values[idx_dist(gen)];
+    int success_count = 0;
 
-    int expected_count = std::count(values.begin(), values.end(), target);
+    for (int i = 0; i < 100; ++i) {
+        std::vector<uint16_t> values(SIZE);
+        for (auto& v : values) v = dist(gen);
 
-    setVariable(cpu, program, "n", SIZE);
-    setArray(cpu, program, "nums", values);
-    setVariable(cpu, program, "target", target);
+        std::vector<uint16_t> w(SIZE);
+        for (auto& v : w) v = dist(gen);
 
-    cpu.runProgram();
+        int expected_count = 0;
+        for (size_t i = 0; i < SIZE; ++i) {
+            expected_count += values[i] * w[i];
+        }
 
-    EXPECT_EQ(cpu.ACC, expected_count);
+        CPU<ACC_MA> cpu;
+        cpu.loadProgramLayout(program);
+
+        setVariable(cpu, program, "n", SIZE);
+        setArray(cpu, program, "v", values);
+        setArray(cpu, program, "w", w);
+
+        cpu.runProgram();
+
+        success_count += static_cast<int>(cpu.ACC == expected_count);
+    }
+
+    EXPECT_EQ(success_count, 100) << "Produit scalaire failed on " << (100 - success_count) << "/100 random tests.";
 }
 
 static void printUsage(const char* prog) {
@@ -95,8 +100,10 @@ int main(int argc, char** argv) {
         }
     }
 
+
     if (codePath.empty()) {
-        printUsage(argv[0]);
+        codePath = "./produit_scalaire.txt";  // Default path for testing
+        // printUsage(argv[0]);
     }
 
     else if (!std::filesystem::exists(codePath)) {
