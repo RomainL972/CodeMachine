@@ -14,5 +14,5 @@ set_target_properties(code_machine_grader PROPERTIES WIN32_EXECUTABLE OFF)
 
 # Compiler warnings for GCC/Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(code_machine_grader PRIVATE -Wall -Wextra -Wpedantic -municode)
+    target_compile_options(code_machine_grader PRIVATE -Wall -Wextra -Wpedantic)
 endif()
